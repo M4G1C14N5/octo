@@ -1451,6 +1451,7 @@ pub async fn scrobble(State(state): State<AppState>, req: Request) -> AppResult 
                 prewarm_queue();
                 note_listening(&state, &call, address, &ids, &submissions).await;
                 note_now_playing(&state, &call, caller.as_ref(), &ids, &submissions);
+                note_outside_now_playing(&state, &call, &ids, &submissions).await;
                 learn_from_scrobbles(&state, &call, &ids, &submissions, &times, device_id.as_deref()).await?;
             }
             let content_type = check
@@ -1473,6 +1474,7 @@ pub async fn scrobble(State(state): State<AppState>, req: Request) -> AppResult 
             prewarm_queue();
             note_listening(&state, &call, address, &ids, &submissions).await;
             note_now_playing(&state, &call, caller.as_ref(), &ids, &submissions);
+            note_outside_now_playing(&state, &call, &ids, &submissions).await;
             learn_from_scrobbles(&state, &call, &ids, &submissions, &times, device_id.as_deref()).await?;
         }
         let content_type = result
@@ -1571,6 +1573,36 @@ fn note_now_playing(
             state.prefetch.on_playing(&who, &id, caller.as_ref()).await;
         }
     });
+}
+
+/// A now-playing scrobble (`submission=false`) puts an outside song in `getNowPlaying`, where
+/// Navidrome never lists it; a library song started on the same player takes its place.
+async fn note_outside_now_playing(state: &AppState, call: &SubsonicCall, ids: &[String], submissions: &[String]) {
+    let started = ids.iter().enumerate().rev().find(|(index, id)| {
+        let submission = if submissions.len() == 1 {
+            submissions.first()
+        } else {
+            submissions.get(*index)
+        };
+        !id.is_empty() && submission.is_some_and(|s| !is_true(s))
+    });
+    let Some((_, id)) = started else {
+        return;
+    };
+    let Ok(who) = signed_in_user(state, call).await else {
+        return;
+    };
+    if who.is_empty() {
+        return;
+    }
+    let outside = state.local_library.parse_song_id(id).0;
+    super::now_playing::OUTSIDE_NOW_PLAYING.started(
+        &who,
+        &super::now_playing::player_of(call),
+        id,
+        outside,
+        Utc::now(),
+    );
 }
 
 /// What a completed scrobble teaches: the radio profile (when personalised radio is

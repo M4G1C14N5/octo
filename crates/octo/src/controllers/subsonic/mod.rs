@@ -6,6 +6,7 @@ pub mod animated_art;
 pub mod info;
 pub mod internet_radio;
 pub mod native;
+pub mod now_playing;
 pub mod ping;
 pub mod places;
 pub mod playlists;
@@ -171,6 +172,7 @@ pub fn routes() -> RouteSet {
         .merge(browsing::routes())
         .merge(media::routes())
         .merge(stars::routes())
+        .merge(now_playing::routes())
         .merge(extensions::routes())
         .merge(downloads::routes())
         .merge(lyrics::routes())

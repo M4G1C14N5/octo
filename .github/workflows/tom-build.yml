@@ -1,0 +1,46 @@
+name: Tom build (patched Octo binary)
+
+# Tests the octo crate and builds the release binary for Tom's patched image (deploy/tom).
+# A tag tom-* publishes the binary and its sha256 as a release of this fork.
+on:
+  workflow_dispatch:
+  push:
+    branches: ['tom/**']
+    tags: ['tom-*']
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: lukemathwalker/cargo-chef:0.1.78-rust-1.99-bookworm
+    env:
+      CARGO_TERM_COLOR: never
+      CARGO_INCREMENTAL: "0"
+    steps:
+      - uses: actions/checkout@v4
+      - name: Tests (octo crate)
+        env:
+          CARGO_PROFILE_DEV_DEBUG: "0"
+          CARGO_PROFILE_TEST_DEBUG: "0"
+        run: cargo test --locked -p octo --lib
+      - name: Release binary
+        run: |
+          cargo build --release --locked --package octo --bin octo
+          mkdir -p out && cp target/release/octo out/octo-linux-amd64
+          cd out && sha256sum octo-linux-amd64 > octo-linux-amd64.sha256 && cat octo-linux-amd64.sha256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: octo-linux-amd64
+          path: out/
+      - name: Release
+        if: startsWith(github.ref, 'refs/tags/tom-')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          apt-get update -qq && apt-get install -y -qq gh >/dev/null 2>&1 || true
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          gh release create "$GITHUB_REF_NAME" out/octo-linux-amd64 out/octo-linux-amd64.sha256 \
+            --repo "$GITHUB_REPOSITORY" --title "$GITHUB_REF_NAME" \
+            --notes "Octo 2026.11.15 + outside songs in getNowPlaying. See deploy/tom/README.md."
