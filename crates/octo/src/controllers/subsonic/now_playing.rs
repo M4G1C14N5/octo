@@ -87,7 +87,7 @@ impl OutsideNowPlaying {
             })
             .cloned()
             .collect();
-        list.sort_by_key(|p| p.since);
+        list.sort_by(|a, b| (a.since, &a.username, &a.player).cmp(&(b.since, &b.username, &b.player)));
         list
     }
 
@@ -292,7 +292,8 @@ mod tests {
         now.started("tom", "desktop", "short", true, at(0));
         let length = |id: &str| (id == "short").then_some(120);
         let ids = |t| -> Vec<String> { now.current(at(t), length).into_iter().map(|p| p.song_id).collect() };
-        assert_eq!(ids(150), ["long", "short"]);
+        // Same start: by listener, then player.
+        assert_eq!(ids(150), ["short", "long"]);
         assert_eq!(ids(181), ["long"]);
         assert_eq!(ids(599), ["long"]);
         assert!(ids(600).is_empty());
