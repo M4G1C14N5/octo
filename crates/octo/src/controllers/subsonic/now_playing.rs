@@ -318,6 +318,10 @@ mod app_tests {
             .respond_with(navidrome_json(NAVIDROME_OK))
             .mount(&navidrome)
             .await;
+        Mock::given(path("/rest/scrobble"))
+            .respond_with(navidrome_json(NAVIDROME_OK))
+            .mount(&navidrome)
+            .await;
         Mock::given(path("/rest/getNowPlaying"))
             .respond_with(navidrome_json(now_playing))
             .mount(&navidrome)
