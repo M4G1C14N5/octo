@@ -341,7 +341,7 @@ mod app_tests {
         let app = app(&state);
         let played = get(
             &app,
-            &format!("/rest/scrobble?id={song}&submission=false&{}&f=json", auth("np-tom", "good", "Octo for iPhone")),
+            &format!("/rest/scrobble?id={song}&submission=false&{}&f=json", auth("np-tom", "good", "Octo%20for%20iPhone")),
         )
         .await;
         assert_eq!(played.envelope()["status"], "ok", "{}", played.text());
@@ -357,10 +357,10 @@ mod app_tests {
         assert!(entries.iter().any(|e| e["id"] == "lib-9"), "Navidrome's own entry stays");
 
         // The play finishing does not clear it; the player starting another song does.
-        get(&app, &format!("/rest/scrobble?id={song}&submission=true&{}&f=json", auth("np-tom", "good", "Octo for iPhone"))).await;
+        get(&app, &format!("/rest/scrobble?id={song}&submission=true&{}&f=json", auth("np-tom", "good", "Octo%20for%20iPhone"))).await;
         let answer = get(&app, &format!("/rest/getNowPlaying?{}&f=json", auth("np-tom", "good", "hub"))).await;
         assert!(answer.text().contains(&song));
-        get(&app, &format!("/rest/scrobble?id=lib-1&submission=false&{}&f=json", auth("np-tom", "good", "Octo for iPhone"))).await;
+        get(&app, &format!("/rest/scrobble?id=lib-1&submission=false&{}&f=json", auth("np-tom", "good", "Octo%20for%20iPhone"))).await;
         let answer = get(&app, &format!("/rest/getNowPlaying?{}&f=json", auth("np-tom", "good", "hub"))).await;
         assert!(!answer.text().contains(&song), "{}", answer.text());
     }
