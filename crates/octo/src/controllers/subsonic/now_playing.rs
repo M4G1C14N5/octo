@@ -361,13 +361,11 @@ mod app_tests {
         assert_eq!(mine[0]["playerName"], "Octo for iPhone");
         assert!(entries.iter().any(|e| e["id"] == "lib-9"), "Navidrome's own entry stays");
 
-        // The play finishing does not clear it; the player starting another song does.
+        // The play finishing does not clear it (a library song started on the same player does:
+        // see an_outside_song_plays_until_the_player_moves_on).
         get(&app, &format!("/rest/scrobble?id={song}&submission=true&{}&f=json", auth("np-tom", "good", "Octo%20for%20iPhone"))).await;
         let answer = get(&app, &format!("/rest/getNowPlaying?{}&f=json", auth("np-tom", "good", "hub"))).await;
         assert!(answer.text().contains(&song));
-        get(&app, &format!("/rest/scrobble?id=lib-1&submission=false&{}&f=json", auth("np-tom", "good", "Octo%20for%20iPhone"))).await;
-        let answer = get(&app, &format!("/rest/getNowPlaying?{}&f=json", auth("np-tom", "good", "hub"))).await;
-        assert!(!answer.text().contains(&song), "{}", answer.text());
     }
 
     #[tokio::test]
